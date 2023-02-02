@@ -96,12 +96,12 @@ jobs:
     #         echo -n 'movies' >| /tmp/secrets/CosmosCollection
     #         echo -n 'imdb' >| /tmp/secrets/CosmosDatabase
     
-    - name: 'Az CLI login'
-      uses: azure/login@v1
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    # - name: 'Az CLI login'
+    #   uses: azure/login@v1
+    #   with:
+    #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+    #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+    #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Docker Run and Test - Cosmos
       run: |
