@@ -87,6 +87,7 @@ jobs:
     - name: Set Secrets
       run: |
             mkdir -p /tmp/secrets
+            echo -n ${{ secrets.NGSA_TEST_COSMOS_RW_KEY}}
             echo -n ${{ secrets.NGSA_TEST_COSMOS_RW_KEY}} >| /tmp/secrets/CosmosKey
             echo -n ${{ secrets.NGSA_TEST_COSMOS_URL }} >| /tmp/secrets/CosmosUrl
             echo -n 'movies' >| /tmp/secrets/CosmosCollection
