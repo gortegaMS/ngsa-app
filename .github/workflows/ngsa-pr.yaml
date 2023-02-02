@@ -10,6 +10,10 @@ on:
       - '**.cs'
       - '.github/workflows/ngsa-pr.yaml'
 
+permissions:
+      id-token: write
+      contents: read
+
 jobs:
 
   build:
@@ -91,7 +95,7 @@ jobs:
             echo -n ${{ secrets.NGSA_TEST_COSMOS_URL }} >| /tmp/secrets/CosmosUrl
             echo -n 'movies' >| /tmp/secrets/CosmosCollection
             echo -n 'imdb' >| /tmp/secrets/CosmosDatabase
-
+    
     - name: 'Az CLI login'
       uses: azure/login@v1
       with:
