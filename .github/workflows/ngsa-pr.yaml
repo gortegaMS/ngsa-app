@@ -117,10 +117,7 @@ jobs:
 
     - name: Docker Run and Test - Cosmos
       run: |
-
-            # docker run -d --name ngsacscosmos -p 8081:8080 -v /tmp/secrets:/app/secrets:ro image --no-cache
-            
-            docker run -d --name ngsacscosmos -p 8081:8080 -v /tmp/secrets:/app/secrets:ro image --no-cache --cosmos-auth-type ManagedIdentity
+            docker run -d --name ngsacscosmos -p 8081:8080 -v /tmp/secrets:/app/secrets:ro image --cosmos-auth-type ManagedIdentity --no-cache
 
             echo "Waiting for web server to start ..."
 
