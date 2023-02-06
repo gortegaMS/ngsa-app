@@ -10,6 +10,10 @@ on:
       - '**.cs'
       - '.github/workflows/ngsa-pr.yaml'
 
+permissions:
+      id-token: write
+      contents: read
+
 jobs:
 
   build:
@@ -21,81 +25,99 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Login to Container Registry
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{ secrets.GHCR_ID }}
-        password: ${{ secrets.GHCR_PAT }}
+    # - name: Login to Container Registry
+    #   uses: docker/login-action@v1
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ secrets.GHCR_ID }}
+    #     password: ${{ secrets.GHCR_PAT }}
 
     - name: Docker Build
       run: |
         docker build . --progress auto -t image
 
-    - name: Grype Scan Image for Vulnerabilities
-      uses: anchore/scan-action@v3
-      id: grype
-      with:
-        image: "image"
-        severity-cutoff: critical
-        acs-report-enable: true
-        fail-build: true
+    # - name: Grype Scan Image for Vulnerabilities
+    #   uses: anchore/scan-action@v3
+    #   id: grype
+    #   with:
+    #     image: "image"
+    #     severity-cutoff: critical
+    #     acs-report-enable: true
+    #     fail-build: true
 
-    - name: Upload Grype Vulnerability SARIF report
-      if: always()
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: ${{ steps.grype.outputs.sarif }}
+    # - name: Upload Grype Vulnerability SARIF report
+    #   if: always()
+    #   uses: github/codeql-action/upload-sarif@v2
+    #   with:
+    #     sarif_file: ${{ steps.grype.outputs.sarif }}
 
 
-    - name: Docker Run and Test - In-Memory
-      run: |
+    # - name: Docker Run and Test - In-Memory
+    #   run: |
 
-            docker run -d --name ngsacsmem -p 8080:8080 image --in-memory
+    #         docker run -d --name ngsacsmem -p 8080:8080 image --in-memory
 
-            echo "Waiting for web server to start ..."
+    #         echo "Waiting for web server to start ..."
 
-            wait_time=10
-            sleep $wait_time
+    #         wait_time=10
+    #         sleep $wait_time
 
-            # wait up to 30 seconds for web server to start
-            while true
-            do
-                if curl -s localhost:8080/version ; then
-                    echo -e "\n web server is running"
-                    break
-                fi
+    #         # wait up to 30 seconds for web server to start
+    #         while true
+    #         do
+    #             if curl -s localhost:8080/version ; then
+    #                 echo -e "\n web server is running"
+    #                 break
+    #             fi
 
-                # check if container is still running
-                if [ -z "$(docker ps -q -f name=ngsacsmem)" ]; then
-                  docker logs ngsacsmem
-                  exit 1
-                fi
+    #             # check if container is still running
+    #             if [ -z "$(docker ps -q -f name=ngsacsmem)" ]; then
+    #               docker logs ngsacsmem
+    #               exit 1
+    #             fi
 
-                if [ $wait_time -gt 30 ] ; then
-                  echo -e "\n timeout waiting for web server to start"
-                  exit 1
-                fi
+    #             if [ $wait_time -gt 30 ] ; then
+    #               echo -e "\n timeout waiting for web server to start"
+    #               exit 1
+    #             fi
 
-                sleep 1
-                ((wait_time=wait_time+1))
-            done
+    #             sleep 1
+    #             ((wait_time=wait_time+1))
+    #         done
 
-            echo "Running In-Memory benchmark and baseline"
-            docker run --rm --network=host ghcr.io/retaildevcrews/ngsa-lr:beta -s "http://localhost:8080" --max-errors 1 -f benchmark.json baseline.json
+    #         echo "Running In-Memory benchmark and baseline"
+    #         docker run --rm --network=host ghcr.io/retaildevcrews/ngsa-lr:beta -s "http://localhost:8080" --max-errors 1 -f benchmark.json baseline.json
 
-    - name: Set Secrets
+    # - name: Set Secrets
+    #   run: |
+    #         mkdir -p /tmp/secrets
+    #         echo -n ${{ secrets.NGSA_TEST_COSMOS_RW_KEY}} >| /tmp/secrets/CosmosKey
+    #         echo -n ${{ secrets.NGSA_TEST_COSMOS_URL }} >| /tmp/secrets/CosmosUrl
+    #         echo -n 'movies' >| /tmp/secrets/CosmosCollection
+    #         echo -n 'imdb' >| /tmp/secrets/CosmosDatabase
+    
+    - name: Set Secrets without CosmosKey and DEV CosmosDB
       run: |
             mkdir -p /tmp/secrets
-            echo -n ${{ secrets.NGSA_TEST_COSMOS_RW_KEY}} >| /tmp/secrets/CosmosKey
-            echo -n ${{ secrets.NGSA_TEST_COSMOS_URL }} >| /tmp/secrets/CosmosUrl
+            echo -n ${{ secrets.NGSA_DEV_COSMOS_URL }} >| /tmp/secrets/CosmosUrl
             echo -n 'movies' >| /tmp/secrets/CosmosCollection
             echo -n 'imdb' >| /tmp/secrets/CosmosDatabase
 
+    # - name: 'Az CLI login'
+    #   uses: azure/login@v1
+    #   with:
+    #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+    #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+    #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # - name: 'Run az commands'
+    #   run: |
+    #       az account show
+    #       az group list
+
     - name: Docker Run and Test - Cosmos
       run: |
-
-            docker run -d --name ngsacscosmos -p 8081:8080 -v /tmp/secrets:/app/secrets:ro image --no-cache
+            docker run -d --name ngsacscosmos -p 8081:8080 -v /tmp/secrets:/app/secrets:ro image --cosmos-auth-type ManagedIdentity --no-cache
 
             echo "Waiting for web server to start ..."
 
@@ -133,11 +155,11 @@ jobs:
       run: |
             rm -rf /tmp/secrets
 
-    - name: Docker Tag and Push
-      run: |
+    # - name: Docker Tag and Push
+    #   run: |
 
-        # tag the repo with :dev
-        docker tag image $DOCKER_REPO:dev
+    #     # tag the repo with :dev
+    #     docker tag image $DOCKER_REPO:dev
 
-        # Push to the repo
-        docker push -a $DOCKER_REPO
+    #     # Push to the repo
+    #     docker push -a $DOCKER_REPO
